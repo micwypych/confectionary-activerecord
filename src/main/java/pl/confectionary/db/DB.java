@@ -16,6 +16,10 @@ public class DB {
 	public static Connection getConnection() {
 		return ConnectionSource.getInstance().getConnection();
 	}
+	
+	public static void cleanUp(PreparedStatement stmt) {
+		cleanUp(stmt,(ResultSet)null);
+	}
 
 	public static void cleanUp(PreparedStatement stmt, ResultSet rs) {
 		try {

@@ -5,7 +5,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -14,15 +16,15 @@ import javax.money.format.MonetaryFormats;
 
 import org.javamoney.moneta.Money;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
+
 import pl.confectionary.db.ApplicationException;
 import pl.confectionary.db.DB;
 import pl.confectionary.db.IdNotFound;
 import pl.confectionary.db.RecordNotFound;
 import pl.confectionary.db.Registry;
 import pl.confectionary.db.ResultSetExtended;
-
-import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
 
 
 
@@ -126,27 +128,49 @@ public class Choclate {
 		}
 	}
 	
-	//public static Choclate findBy(Map<String,Object> arg)
 	public void create() {
+		create(Arrays.asList(this));
+	}
+	
+	public static void create(List<Choclate> choclates) {
 		PreparedStatement stmt = null;
 		ResultSetExtended rs = null;
 		try {
-			stmt = DB.prepareStatement(INSERT_QUERY);
-			stmt.setString(1, name);
-			stmt.setBigDecimal(2, cost.getNumber().numberValue(BigDecimal.class));
-			stmt.setString(3, cost.getCurrency().toString());
+			stmt = DB.prepareStatement(INSERT_QUERY+valuesTuple(choclates.size()));
+			int index = 1;
+			for(Choclate c: choclates) {
+				index = setValuesOfStmtAndReturnNextIndex(stmt,c,index);
+			}
 			stmt.executeUpdate();
 			rs = new ResultSetExtended(stmt.getGeneratedKeys());
-			if( !rs.next() ) {
-				throw new IdNotFound();
+			for(Choclate c: choclates) {
+				c.id = nextCreatedId(rs);
 			}
-			long id = rs.getLong(1);
-			this.id = id;
 		} catch (SQLException e) {
 			throw new ApplicationException(e);
 		} finally {
 			DB.cleanUp(stmt,rs);
 		}
+	}
+	
+	private static String valuesTuple(int size) {
+		final String tuple = "(NULL,?,?,?)";
+		return Joiner.on(",").join(Collections.nCopies(size, tuple).iterator());
+	}
+
+	private static long nextCreatedId(ResultSetExtended rs) throws SQLException {
+		if( !rs.next() ) {
+			throw new IdNotFound();
+		}
+		long id = rs.getLong(1);
+		return id;
+	}
+
+	private static int setValuesOfStmtAndReturnNextIndex(PreparedStatement stmt,Choclate c,int initialIndex) throws SQLException {
+		stmt.setString(initialIndex++, c.name);
+		stmt.setBigDecimal(initialIndex++, c.cost.getNumber().numberValue(BigDecimal.class));
+		stmt.setString(initialIndex++, c.cost.getCurrency().toString());
+		return initialIndex;
 	}
 	
 	public void update() {
@@ -182,7 +206,7 @@ public class Choclate {
 		return String.format("Choclate{id=%d, name=%s, cost=%s}",id,name,MonetaryFormats.getAmountFormat(Locale.getDefault()).format(cost));
 	}
 	
-	private static Choclate load(ResultSetExtended rs) {
+	static Choclate load(ResultSetExtended rs) {
 		try {
 			long id = rs.getLong(ID_FIELD);
 			Optional<Choclate> oc = Registry.getChoclate(id);
@@ -205,12 +229,12 @@ public class Choclate {
 	private MonetaryAmount cost;
 	
 	
-	private final static String TABLE_NAME = "choclates";
-	private final static String ID_FIELD = "id";
-	private static final String NAME_FIELD = "name";
-	private static final String COST_AMOUNT_FIELD = "cost_amount";
-	private static final String COST_CURRENCY_FIELD = "cost_currency";
-	private final static String FIELDS = Joiner.on(", ").join(ID_FIELD,NAME_FIELD,COST_AMOUNT_FIELD,COST_CURRENCY_FIELD);
+	public final static String TABLE_NAME = "choclates AS c";
+	public final static String ID_FIELD = "c.id";
+	public static final String NAME_FIELD = "c.name";
+	public static final String COST_AMOUNT_FIELD = "c.cost_amount";
+	public static final String COST_CURRENCY_FIELD = "c.cost_currency";
+	public final static String FIELDS = Joiner.on(", ").join(ID_FIELD,NAME_FIELD,COST_AMOUNT_FIELD,COST_CURRENCY_FIELD);
 	private final static String ALL_QUERY = "SELECT "+FIELDS+" FROM "+TABLE_NAME;
 	private final static String FIRST_QUERY = "SELECT "+FIELDS+" FROM "+TABLE_NAME+" LIMIT 1";
 	private final static String FIND_SINGLE_QUERY = "SELECT "+FIELDS+" FROM "+TABLE_NAME+"WHERE id = ?";

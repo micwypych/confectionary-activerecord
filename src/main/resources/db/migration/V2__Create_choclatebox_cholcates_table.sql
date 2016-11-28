@@ -1,0 +1,4 @@
+CREATE TABLE choclate_boxes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(30)
+);
