@@ -1,5 +1,11 @@
 package pl.confectionary.domain;
 
+import static pl.confectionary.db.ActiveRecord.defaultTableNameFor;
+import static pl.confectionary.db.ActiveRecord.fieldList;
+import static pl.confectionary.db.ActiveRecord.qualifiedFieldList;
+import static pl.confectionary.db.ActiveRecord.stmtSqlQueryAliasFor;
+import static pl.confectionary.db.QueryTemplates.insertQuery;
+
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -229,16 +235,20 @@ public class Choclate {
 	private MonetaryAmount cost;
 	
 	
-	public final static String TABLE_NAME = "choclates AS c";
-	public final static String ID_FIELD = "c.id";
-	public static final String NAME_FIELD = "c.name";
-	public static final String COST_AMOUNT_FIELD = "c.cost_amount";
-	public static final String COST_CURRENCY_FIELD = "c.cost_currency";
-	public final static String FIELDS = Joiner.on(", ").join(ID_FIELD,NAME_FIELD,COST_AMOUNT_FIELD,COST_CURRENCY_FIELD);
+	public final static String TABLE_NAME = defaultTableNameFor(Choclate.class);
+	public final static String Q_TABLE_NAME = stmtSqlQueryAliasFor(TABLE_NAME);
+	public final static String ID_FIELD = "id";
+	public final static String NAME_FIELD = "name";
+	public static final String COST_AMOUNT_FIELD = "cost_amount";
+	public static final String COST_CURRENCY_FIELD = "cost_currency";
+	
+	public final static String FIELDS = fieldList(ID_FIELD,NAME_FIELD,COST_AMOUNT_FIELD,COST_CURRENCY_FIELD);
+	public final static String Q_FIELDS = qualifiedFieldList(TABLE_NAME,ID_FIELD,NAME_FIELD,COST_AMOUNT_FIELD,COST_CURRENCY_FIELD);
+	
 	private final static String ALL_QUERY = "SELECT "+FIELDS+" FROM "+TABLE_NAME;
 	private final static String FIRST_QUERY = "SELECT "+FIELDS+" FROM "+TABLE_NAME+" LIMIT 1";
 	private final static String FIND_SINGLE_QUERY = "SELECT "+FIELDS+" FROM "+TABLE_NAME+"WHERE id = ?";
-	private final static String FIND_MULTIPLE_QUERY = "SELECT "+FIELDS+" FROM "+TABLE_NAME+"WHERE id IN ?";
-	private final static String INSERT_QUERY = "INSERT INTO "+TABLE_NAME+"("+FIELDS+") VALUES (NULL,?,?,?)";
+	private final static String FIND_MULTIPLE_QUERY = "SELECT "+FIELDS+" FROM "+TABLE_NAME+"WHERE id IN ";
+	private final static String INSERT_QUERY = insertQuery(TABLE_NAME,FIELDS);
 	private final static String UPDATE_QUERY = "UPDATE "+TABLE_NAME+" SET "+NAME_FIELD+" = ?, "+COST_AMOUNT_FIELD+" = ?, "+COST_CURRENCY_FIELD+" = ? WHERE id = ?";
 }
